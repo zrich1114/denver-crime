@@ -1,0 +1,33 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16
+    container_name: local-postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: denverdb
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  loader:
+    build:
+      context: .
+      dockerfile: LoaderDockerfile
+    depends_on:
+      - db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: denverdb
+      POSTGRES_HOST: db
+    volumes:
+      - ./data:/data
+      - ./app:/app
+    command: python /app/db_init.py
+
+volumes:
+  pgdata:
