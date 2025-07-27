@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 import psycopg2
+import re
 
 # Environment variables (set in docker-compose)
 DB_NAME = os.getenv("POSTGRES_DB", "denverdb")
@@ -42,6 +43,13 @@ def sql_type(series: pd.Series) -> str:
     return "TEXT"
 
 
+def normalize_neighborhood(s):
+    if pd.isnull(s):
+        return None
+
+    return re.sub(r"[-_]", " ", s).title()
+
+
 for filename in os.listdir(csv_folder):
     if not filename.endswith(".csv"):
         continue
@@ -54,6 +62,9 @@ for filename in os.listdir(csv_folder):
     try:
         # Load CSV
         df = pd.read_csv(path, keep_default_na=False, na_values=[""])
+
+        if table_name == "crimes" and "NEIGHBORHOOD_ID" in df.columns:
+            df["NEIGHBORHOOD"] = df["NEIGHBORHOOD_ID"].apply(normalize_neighborhood)
 
         # Infer SQL types
         inferred_types = {col: sql_type(df[col]) for col in df.columns}
@@ -88,7 +99,7 @@ for filename in os.listdir(csv_folder):
         # Create SQL table
         columns = ", ".join(f'"{col}" {inferred_types[col]}' for col in df.columns)
         cur.execute(f"DROP TABLE IF EXISTS {table_name};")
-        cur.execute(f"CREATE TABLE {table_name} ({columns});")
+        cur.execute(f"CREATE TABLE {table_name} ({columns.lower()});")
 
         # Copy data
         with open(tmp_path, "r") as f:
