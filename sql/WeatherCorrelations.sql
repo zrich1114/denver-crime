@@ -49,12 +49,3 @@ SELECT temp_categories.category, COUNT(agg_assaults.*) assault_count
 	) temp_categories
 		ON agg_assaults.temperature BETWEEN temp_categories.low_threshold AND temp_categories.high_threshold
 	GROUP BY temp_categories.category;
-
-SELECT w.temp temperature, cr.offense_category_id, w.datetime::Date
-	FROM weather w INNER JOIN crimes cr
-		ON w.datetime::Date = cr.first_occurrence_date::Date
-	WHERE cr.offense_category_id = 'aggravated-assault'
-		AND w.temp NOT BETWEEN -100 and 200
-	ORDER BY temperature ASC;
-
-SELECT COUNT(*) from crimes where offense_category_id = 'aggravated-assault';
